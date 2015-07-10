@@ -9,6 +9,7 @@ import sys
 
 import bravado_core
 from bravado_core.exception import SwaggerMappingError
+from bravado_core.formatter import register_format
 from bravado_core.request import RequestLike, unmarshal_request
 from bravado_core.response import get_response_spec, OutgoingResponse
 from pyramid.interfaces import IRoutesMapper
@@ -294,6 +295,10 @@ def load_settings(registry):
 SwaggerHandler = namedtuple('SwaggerHandler',
                             'op_for_request handle_request handle_response')
 
+# Not sure if this is the right place to put it. should be accessible
+# by the service so that an instance of it can easily be created.
+UserFormatterLike = namedtuple('UserFormatterLike',
+                               'format, to_wire, to_python, description')
 
 def build_swagger_handler(settings, schema):
     """
@@ -536,3 +541,11 @@ def get_swagger_versions(settings):
             raise ValueError('Swagger version {0} is not supported.'
                              .format(swagger_version))
     return swagger_versions
+
+
+def register_user_format_validators(settings):
+    validators = settings.get(
+        'pyramid_swagger.user_format_validators', {})
+    for name, user_formatter in validators.iteritems():
+        register_format(name, user_formatter.to_wire, user_formatter.to_python,
+                        user_formatter.description)
